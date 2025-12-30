@@ -1,12 +1,15 @@
 import { getSession } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { redirect } from 'next/navigation';
+import UpcomingBookings from '@/components/dashboard/UpcomingBookings';
+
 
 async function CustomerDashboard({ userId }: { userId: string }) {
     const activePackages = await prisma.userPackage.findMany({
         where: { userId, isActive: true },
         include: { package: true },
     });
+
 
     const upcomingBookings = await prisma.booking.findMany({
         where: {
@@ -38,25 +41,7 @@ async function CustomerDashboard({ userId }: { userId: string }) {
                 )}
             </div>
 
-            <div className="card animate-fade-in" style={{ animationDelay: '0.1s' }}>
-                <h2 style={{ marginBottom: '1rem', color: 'var(--color-primary)' }}>Yaklaşan Dersler</h2>
-                {upcomingBookings.length === 0 ? (
-                    <p>Yaklaşan rezervasyonunuz yok.</p>
-                ) : (
-                    upcomingBookings.map(booking => (
-                        <div key={booking.id} style={{ marginBottom: '0.8rem', padding: '0.8rem', background: 'var(--color-bg)', borderRadius: 'var(--radius-sm)' }}>
-                            <div style={{ fontWeight: '600' }}>{booking.class.name}</div>
-                            <div style={{ fontSize: '0.85rem', opacity: 0.8 }}>
-                                {new Date(booking.class.startTime).toLocaleDateString('tr-TR', { weekday: 'long', day: 'numeric', month: 'long' })}
-                                <br />
-                                {new Date(booking.class.startTime).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}
-                                {' - '}
-                                {booking.class.trainer.name}
-                            </div>
-                        </div>
-                    ))
-                )}
-            </div>
+            <UpcomingBookings bookings={upcomingBookings} />
 
             <div className="card animate-fade-in" style={{ animationDelay: '0.2s', background: 'var(--color-primary)', color: 'white' }}>
                 <h2 style={{ marginBottom: '0.5rem' }}>Hemen Rezervasyon Yap</h2>

@@ -22,10 +22,17 @@ model User {
   updatedAt DateTime @updatedAt
 
   // Relations
-  userPackages UserPackage[]
-  bookings     Booking[]
-  taughtClasses Class[]     @relation("TrainerClasses")
-  notifications Notification[]
+  userPackages    UserPackage[]
+  bookings        Booking[]
+  taughtClasses   Class[]     @relation("TrainerClasses")
+  notifications   Notification[]
+  
+  // New Relations
+  healthProfile   HealthProfile?
+  transactions    Transaction[]
+  posts           Post[]
+  availability    TrainerAvailability[]
+  waitlistEntries Waitlist[]
 }
 
 model Package {
@@ -41,6 +48,7 @@ model Package {
   updatedAt     DateTime @updatedAt
 
   userPackages UserPackage[]
+  transactions Transaction[]
 }
 
 model UserPackage {
@@ -74,6 +82,7 @@ model Class {
 
   trainer     User      @relation("TrainerClasses", fields: [trainerId], references: [id])
   bookings    Booking[]
+  waitlist    Waitlist[]
 }
 
 model Booking {
@@ -88,6 +97,19 @@ model Booking {
   user        User        @relation(fields: [userId], references: [id])
   class       Class       @relation(fields: [classId], references: [id])
   userPackage UserPackage? @relation(fields: [userPackageId], references: [id])
+  transaction Transaction?
+}
+
+model Waitlist {
+  id        String   @id @default(cuid())
+  userId    String
+  classId   String
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id])
+  class     Class    @relation(fields: [classId], references: [id])
+
+  @@unique([userId, classId])
 }
 
 model Notification {
@@ -100,4 +122,70 @@ model Notification {
   createdAt DateTime @default(now())
 
   user User? @relation(fields: [userId], references: [id])
+}
+
+// --- NEW MODELS ---
+
+model HealthProfile {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  emergencyContact String?
+  bloodType       String?
+  injuries        String?  // JSON or text description of injuries
+  parqAnswers     String?  // Stored as JSON string
+  updatedAt       DateTime @updatedAt
+
+  user            User     @relation(fields: [userId], references: [id])
+}
+
+model Transaction {
+  id          String   @id @default(cuid())
+  userId      String?
+  amount      Decimal
+  type        String   // INCOME, EXPENSE
+  category    String?  // PACKAGE_SALE, SALARY, RENT, COMMISSION
+  description String?
+  date        DateTime @default(now())
+  
+  // Relations
+  packageId   String?
+  bookingId   String?  @unique
+
+  user        User?    @relation(fields: [userId], references: [id])
+  package     Package? @relation(fields: [packageId], references: [id])
+  booking     Booking? @relation(fields: [bookingId], references: [id])
+}
+
+model TrainerAvailability {
+  id        String   @id @default(cuid())
+  userId    String
+  dayOfWeek Int      // 0=Sunday, 1=Monday...
+  startTime String   // "09:00"
+  endTime   String   // "17:00"
+  
+  user      User     @relation(fields: [userId], references: [id])
+}
+
+model Post {
+  id          String   @id @default(cuid())
+  title       String
+  slug        String   @unique
+  content     String
+  authorId    String
+  published   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  author      User     @relation(fields: [authorId], references: [id])
+}
+
+model Video {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  url         String
+  duration    Int?     // in minutes
+  category    String?
+  accessLevel String   @default("ALL") // ALL, MEMBER_ONLY
+  createdAt   DateTime @default(now())
 }
