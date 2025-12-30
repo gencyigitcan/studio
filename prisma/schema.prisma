@@ -1,0 +1,103 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String
+  role      String   @default("CUSTOMER") // CUSTOMER, TRAINER, ADMIN
+  phone     String?
+  avatar    String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  userPackages UserPackage[]
+  bookings     Booking[]
+  taughtClasses Class[]     @relation("TrainerClasses")
+  notifications Notification[]
+}
+
+model Package {
+  id            String   @id @default(cuid())
+  name          String
+  description   String?
+  type          String   // GROUP, PRIVATE
+  credits       Int      // How many classes can be booked
+  price         Decimal
+  validityDays  Int      // How many days valid
+  active        Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  userPackages UserPackage[]
+}
+
+model UserPackage {
+  id             String   @id @default(cuid())
+  userId         String
+  packageId      String
+  remainingCredits Int
+  startDate      DateTime @default(now())
+  endDate        DateTime?
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  user    User    @relation(fields: [userId], references: [id])
+  package Package @relation(fields: [packageId], references: [id])
+  bookings Booking[]
+}
+
+model Class {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  trainerId   String
+  startTime   DateTime
+  endTime     DateTime
+  capacity    Int
+  type        String   // GROUP, PRIVATE
+  status      String   @default("SCHEDULED") // SCHEDULED, CANCELLED, COMPLETED
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  trainer     User      @relation("TrainerClasses", fields: [trainerId], references: [id])
+  bookings    Booking[]
+}
+
+model Booking {
+  id            String   @id @default(cuid())
+  userId        String
+  classId       String
+  userPackageId String?  // Optional because trial booking might not need package? Or enforcing package usage.
+  status        String   @default("CONFIRMED") // CONFIRMED, CANCELLED, NOSHOW
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  user        User        @relation(fields: [userId], references: [id])
+  class       Class       @relation(fields: [classId], references: [id])
+  userPackage UserPackage? @relation(fields: [userPackageId], references: [id])
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  title     String
+  message   String
+  read      Boolean  @default(false)
+  type      String   // INFO, WARNING, SUCCESS
+  createdAt DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id])
+}
