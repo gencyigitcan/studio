@@ -34,7 +34,7 @@ export default function Sidebar({ user }: SidebarProps) {
                             className={clsx(styles.link, isActive && styles.active)}
                         >
                             <Icon size={20} />
-                            {link.name}
+                            {link.label}
                         </Link>
                     );
                 })}
