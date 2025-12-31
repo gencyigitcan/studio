@@ -33,13 +33,23 @@ export async function sendNotificationAction(userIds: string[], title: string, m
     }
 }
 
-export async function markNotificationAsReadAction(notificationId: string) {
+export async function getUnreadNotificationsAction() {
     const session = await getSession();
-    if (!session) return { success: false, message: 'Auth required' };
+    if (!session) return [];
+
+    return prisma.notification.findMany({
+        where: { userId: session.user.id, read: false },
+        orderBy: { createdAt: 'desc' }
+    });
+}
+
+export async function markAsReadAction(id: string) {
+    const session = await getSession();
+    if (!session) return { success: false };
 
     try {
         await prisma.notification.update({
-            where: { id: notificationId }, // Ideally strict check if belongs to user
+            where: { id },
             data: { read: true }
         });
         revalidatePath('/dashboard');

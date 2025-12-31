@@ -2,6 +2,7 @@ import { getSession } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import Sidebar from '@/components/layout/Sidebar';
 import styles from './dashboard.module.css';
+import NotificationBell from '@/components/dashboard/NotificationBell';
 
 export default async function DashboardLayout({
     children,
@@ -23,6 +24,9 @@ export default async function DashboardLayout({
         <div className={styles.layout}>
             <Sidebar user={user} />
             <main className={styles.main}>
+                <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '1rem', marginBottom: '1rem' }}>
+                    <NotificationBell />
+                </div>
                 {children}
             </main>
             {/* Mobile Nav would go here, omitting for MVP unless requested specifically, but Sidebar handles desktop well. 
