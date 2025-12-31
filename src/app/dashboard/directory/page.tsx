@@ -29,7 +29,15 @@ export default async function DirectoryPage() {
         users = await prisma.user.findMany({
             where: { role: 'TRAINER' },
             orderBy: { name: 'asc' },
-            select: { id: true, name: true, role: true, avatar: true } // Customer sees name only, no email private
+            select: {
+                id: true,
+                name: true,
+                role: true,
+                avatar: true,
+                trainerProfile: {
+                    select: { rating: true, ratingCount: true, specialization: true }
+                }
+            }
         });
     }
 

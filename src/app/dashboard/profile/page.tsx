@@ -3,6 +3,8 @@ import { getSession } from '@/lib/auth';
 import { updateProfileAction, updateHealthProfileAction } from '@/app/actions/profile';
 import { redirect } from 'next/navigation';
 
+import ReviewHistory from './ReviewHistory';
+
 export default async function ProfilePage() {
     const session = await getSession();
     if (!session) redirect('/login');
@@ -10,6 +12,21 @@ export default async function ProfilePage() {
     const user = await prisma.user.findUnique({
         where: { id: session.user.id },
         include: { healthProfile: true }
+    });
+
+    // Fetch past bookings for review
+    const pastBookings = await prisma.booking.findMany({
+        where: {
+            userId: session.user.id,
+            status: 'COMPLETED',
+            attendanceStatus: 'PRESENT'
+        },
+        include: {
+            class: { include: { trainer: true } },
+            rating: true
+        },
+        orderBy: { class: { startTime: 'desc' } },
+        take: 5
     });
 
     if (!user) redirect('/login');
@@ -74,6 +91,9 @@ export default async function ProfilePage() {
                     <button type="submit" className="btn btn-secondary" style={{ marginTop: '1rem' }}>Sağlık Bilgilerini Kaydet</button>
                 </form>
             </div>
+
+            {/* Review History */}
+            <ReviewHistory bookings={pastBookings} />
         </div>
     );
 }

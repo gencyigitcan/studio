@@ -107,6 +107,12 @@ export default function DirectoryClient({ users, currentUserRole }: DirectoryCli
                                 }}>
                                     {user.role}
                                 </span>
+                                {user.trainerProfile && (
+                                    <div style={{ fontSize: '0.8rem', opacity: 0.8, marginTop: '4px', color: '#f59e0b' }}>
+                                        ★ {user.trainerProfile.rating?.toFixed(1) || '0.0'} ({user.trainerProfile.ratingCount || 0})
+                                        {user.trainerProfile.specialization && <span style={{ color: '#666', marginLeft: '0.5rem' }}>• {user.trainerProfile.specialization}</span>}
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>
