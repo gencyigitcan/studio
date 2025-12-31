@@ -47,6 +47,38 @@ model User {
   availability    TrainerAvailability[]
   waitlistEntries Waitlist[]
   actionLogs      ActionLog[]
+  leaves          TrainerLeave[]
+
+  // Loyalty & CRM
+  loyaltyPoints     Int @default(0)
+  noShowCount       Int @default(0)
+}
+
+model TrainerLeave {
+  id        String   @id @default(cuid())
+  trainerId String
+  trainer   User     @relation(fields: [trainerId], references: [id], onDelete: Cascade)
+  startDate DateTime
+  endDate   DateTime
+  reason    String?
+  status    String   @default("APPROVED") // APPROVED, REJECTED, PENDING
+  
+  createdAt DateTime @default(now())
+}
+
+model Discount {
+  id        String   @id @default(cuid())
+  code      String   @unique
+  percentage Int?    // e.g. 20 for 20%
+  amount    Float?   // e.g. 100 for 100 TL
+  startDate DateTime?
+  endDate   DateTime?
+  isActive  Boolean  @default(true)
+  usageLimit Int?    // Max usages global
+  usedCount Int      @default(0)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Package {
@@ -89,7 +121,7 @@ model Class {
   startTime   DateTime
   endTime     DateTime
   capacity    Int
-  type        String   // GROUP, PRIVATE
+  type        String   // GROUP, PRIVATE, REFORMER, MAT, PREGNANCY, STRETCH
   status      String   @default("SCHEDULED") // SCHEDULED, CANCELLED, COMPLETED
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -103,8 +135,9 @@ model Booking {
   id            String   @id @default(cuid())
   userId        String
   classId       String
-  userPackageId String?  // Optional because trial booking might not need package? Or enforcing package usage.
-  status        String   @default("CONFIRMED") // CONFIRMED, CANCELLED, NOSHOW
+  userPackageId String?
+  status        String   @default("CONFIRMED") // CONFIRMED, CANCELLED, COMPLETED
+  attendanceStatus String @default("PENDING") // PENDING, PRESENT, ABSENT, NOSHOW
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
@@ -120,8 +153,8 @@ model Waitlist {
   classId   String
   createdAt DateTime @default(now())
 
-  user      User     @relation(fields: [userId], references: [id])
-  class     Class    @relation(fields: [classId], references: [id])
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  class     Class    @relation(fields: [classId], references: [id], onDelete: Cascade)
 
   @@unique([userId, classId])
 }
