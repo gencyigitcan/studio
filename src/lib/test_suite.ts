@@ -22,7 +22,7 @@ import { hash } from 'bcryptjs';
 // This runs INSIDE the Next.js server environment, having access to DB and everything.
 
 async function runTests() {
-    const report = [];
+    const report: { msg: string; status: string }[] = [];
     const log = (msg: string, status: 'PASS' | 'FAIL' | 'INFO' = 'INFO') => {
         console.log(`[${status}] ${msg}`);
         report.push({ msg, status });
