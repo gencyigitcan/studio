@@ -37,6 +37,8 @@ model User {
   bookings        Booking[]
   taughtClasses   Class[]     @relation("TrainerClasses")
   notifications   Notification[]
+  measurements      Measurement[] @relation("UserMeasurements")
+  givenMeasurements Measurement[] @relation("TrainerMeasurements")
   
   // New Relations
   healthProfile   HealthProfile?
@@ -122,6 +124,27 @@ model Waitlist {
   class     Class    @relation(fields: [classId], references: [id])
 
   @@unique([userId, classId])
+}
+
+model Measurement {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation("UserMeasurements", fields: [userId], references: [id], onDelete: Cascade)
+  trainerId String
+  trainer   User     @relation("TrainerMeasurements", fields: [trainerId], references: [id])
+  date      DateTime @default(now())
+  
+  weight    Float?
+  height    Float?
+  waist     Float?
+  hips      Float?
+  chest     Float?
+  arm       Float?
+  leg       Float?
+  fatRatio  Float?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Notification {
