@@ -20,6 +20,7 @@ export const NAV_LINKS = {
     ],
     ADMIN: [
         { label: 'Panel', href: '/dashboard', icon: LayoutDashboard },
+        { label: 'Raporlar', href: '/dashboard/reports', icon: Activity },
         { label: 'Ders Programı', href: '/dashboard/schedule', icon: Calendar },
         { label: 'Paketler', href: '/dashboard/packages', icon: Package },
         { label: 'Videolar', href: '/dashboard/videos', icon: Video },
