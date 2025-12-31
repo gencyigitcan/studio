@@ -52,6 +52,42 @@ model User {
   // Loyalty & CRM
   loyaltyPoints     Int @default(0)
   noShowCount       Int @default(0)
+  
+  // Gamification
+  streak            Int      @default(0)
+  badges            UserBadge[]
+  
+  // Soft Delete
+  deletedAt         DateTime?
+}
+
+model Badge {
+  id          String   @id @default(cuid())
+  name        String
+  description String
+  icon        String   // e.g. "trophy", "star"
+  slug        String   @unique // e.g. "first-class", "streak-10"
+  
+  userBadges  UserBadge[]
+}
+
+model UserBadge {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  badgeId   String
+  badge     Badge    @relation(fields: [badgeId], references: [id], onDelete: Cascade)
+  earnedAt  DateTime @default(now())
+
+  @@unique([userId, badgeId])
+}
+
+model SystemSetting {
+  id        String   @id @default(cuid())
+  key       String   @unique // e.g. "CANCELLATION_WINDOW_HOURS", "MAX_BOOKINGS_PER_WEEK"
+  value     String   // Stores values as strings, parsed in app
+  description String?
+  updatedAt DateTime @updatedAt
 }
 
 model TrainerLeave {
@@ -79,6 +115,8 @@ model Discount {
   
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  
+  deletedAt DateTime? // Soft delete
 }
 
 model Package {
@@ -92,6 +130,8 @@ model Package {
   active        Boolean  @default(true)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+  
+  deletedAt     DateTime?
 
   userPackages UserPackage[]
   transactions Transaction[]
@@ -107,6 +147,8 @@ model UserPackage {
   isActive       Boolean  @default(true)
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
+  
+  deletedAt      DateTime?
 
   user    User    @relation(fields: [userId], references: [id])
   package Package @relation(fields: [packageId], references: [id])
@@ -125,6 +167,8 @@ model Class {
   status      String   @default("SCHEDULED") // SCHEDULED, CANCELLED, COMPLETED
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  
+  deletedAt   DateTime?
 
   trainer     User      @relation("TrainerClasses", fields: [trainerId], references: [id])
   bookings    Booking[]
@@ -136,15 +180,22 @@ model Booking {
   userId        String
   classId       String
   userPackageId String?
-  status        String   @default("CONFIRMED") // CONFIRMED, CANCELLED, COMPLETED
+  status        String   @default("CONFIRMED") // CONFIRMED, CANCELLED, COMPLETED, NOSHOW
   attendanceStatus String @default("PENDING") // PENDING, PRESENT, ABSENT, NOSHOW
+  
+  trainerNote   String?  // Private note about student performance
+  
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+  
+  deletedAt     DateTime?
 
   user        User        @relation(fields: [userId], references: [id])
   class       Class       @relation(fields: [classId], references: [id])
   userPackage UserPackage? @relation(fields: [userPackageId], references: [id])
   transaction Transaction?
+  
+  @@unique([userId, classId])
 }
 
 model Waitlist {
@@ -176,6 +227,7 @@ model Measurement {
   leg       Float?
   fatRatio  Float?
 
+  deletedAt DateTime?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -183,13 +235,18 @@ model Measurement {
 model Notification {
   id        String   @id @default(cuid())
   userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   title     String
   message   String
+  type      String   // INFO, WARNING, SUCCESS, CAMPAIGN
+  channel   String   @default("PUSH") // PUSH, EMAIL, SMS
   read      Boolean  @default(false)
-  type      String   // INFO, WARNING, SUCCESS
+  
+  // A/B Testing
+  campaignId String?
+  variant    String? // "A", "B"
+  
   createdAt DateTime @default(now())
-
-  user User? @relation(fields: [userId], references: [id])
 }
 
 // --- NEW MODELS ---
