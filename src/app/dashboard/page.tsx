@@ -27,7 +27,7 @@ export default async function DashboardPage() {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let activePackages: any[] = [];
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let upcomingBookings: any[] = [];
+    let customerBookings: any[] = [];
 
     if (user.role === 'CUSTOMER') {
         activePackages = await prisma.userPackage.findMany({
@@ -35,7 +35,7 @@ export default async function DashboardPage() {
             include: { package: true },
         });
 
-        upcomingBookings = await prisma.booking.findMany({
+        customerBookings = await prisma.booking.findMany({
             where: {
                 userId: user.id,
                 status: 'CONFIRMED',
@@ -45,6 +45,27 @@ export default async function DashboardPage() {
             orderBy: { class: { startTime: 'asc' } },
             take: 3,
         });
+    }
+
+    // --- TRAINER DATA ---
+    let trainerStats = { upcomingClasses: 0, totalStudents: 0 };
+    if (user.role === 'TRAINER') {
+        trainerStats.upcomingClasses = await prisma.class.count({
+            where: {
+                trainerId: user.id,
+                startTime: { gte: new Date() }
+            }
+        });
+
+        // Count bookings in my upcoming classes
+        const myClasses = await prisma.class.findMany({
+            where: { trainerId: user.id },
+            select: { _count: { select: { bookings: true } } }
+        });
+
+        // Summing up all bookings history (or just upcoming? "Kaç dersi/öğrencisi olduğunu" suggests workload)
+        // Let's count total bookings ever for this trainer to show popularity/impact
+        trainerStats.totalStudents = myClasses.reduce((acc, curr) => acc + curr._count.bookings, 0);
     }
 
     return (
@@ -110,7 +131,7 @@ export default async function DashboardPage() {
                         )}
                     </div>
 
-                    <UpcomingBookings bookings={upcomingBookings} />
+                    <UpcomingBookings bookings={customerBookings} />
 
                     <div className="card animate-fade-in" style={{ animationDelay: '0.2s', background: 'var(--color-primary)', color: 'white' }}>
                         <h2 style={{ marginBottom: '0.5rem' }}>Hemen Rezervasyon Yap</h2>
@@ -124,9 +145,19 @@ export default async function DashboardPage() {
 
             {/* --- TRAINER VIEW --- */}
             {user.role === 'TRAINER' && (
-                <div className="card" style={{ marginBottom: '2rem' }}>
-                    <h2>Eğitmen Paneli</h2>
-                    <p>Ders programınızı aşağıdan takip edebilirsiniz.</p>
+                <div className="grid-responsive">
+                    <div className="card">
+                        <h3>Yaklaşan Derslerim</h3>
+                        <p style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--color-primary)' }}>
+                            {trainerStats.upcomingClasses}
+                        </p>
+                    </div>
+                    <div className="card">
+                        <h3>Toplam Öğrenci/Katılım</h3>
+                        <p style={{ fontSize: '2rem', fontWeight: 'bold' }}>
+                            {trainerStats.totalStudents}
+                        </p>
+                    </div>
                 </div>
             )}
 
