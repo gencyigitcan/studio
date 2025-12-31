@@ -16,34 +16,52 @@ async function main() {
     const password = await hash('123456', 12);
 
     // 2. Create 5 Trainers
+    // 2. Create 5 Trainers with Realistic Names
+    const trainerNames = [
+        'Ayşe Yılmaz', 'Mehmet Demir', 'Zeynep Kaya', 'Can Yıldız', 'Elif Çelik'
+    ];
     const trainers = [];
-    for (let i = 1; i <= 5; i++) {
+
+    for (let i = 0; i < 5; i++) {
+        const name = trainerNames[i];
+        // Create email from name: ayse.yilmaz@pilates.com
+        const email = name.toLowerCase().replace(' ', '.').replace(/ç/g, 'c').replace(/ğ/g, 'g').replace(/ı/g, 'i').replace(/ö/g, 'o').replace(/ş/g, 's').replace(/ü/g, 'u') + '@pilates.com';
+
         const trainer = await prisma.user.create({
             data: {
-                name: `Eğitmen ${i}`,
-                email: `trainer${i}@pilates.com`,
+                name,
+                email,
                 password,
                 role: 'TRAINER',
             },
         });
         trainers.push(trainer);
-        console.log(`Created Trainer: ${trainer.name}`);
+        console.log(`Created Trainer: ${trainer.name} (${email})`);
     }
 
-    // 3. Create 100 Students
+    // 3. Create 100 Students with Realistic Names
+    const firstNames = ['Ali', 'Veli', 'Ayşe', 'Fatma', 'Ahmet', 'Mehmet', 'Zeynep', 'Mustafa', 'Emre', 'Burak', 'Selin', 'Gamze', 'Deniz', 'Cem', 'Ece', 'Gökhan', 'Hakan', 'İrem', 'Merve', 'Kaan'];
+    const lastNames = ['Yılmaz', 'Kaya', 'Demir', 'Çelik', 'Şahin', 'Yıldız', 'Yıldırım', 'Öztürk', 'Aydın', 'Özdemir', 'Arslan', 'Doğan', 'Kılıç', 'Aslan', 'Çetin', 'Kara', 'Koç', 'Kurt', 'Özkan', 'Şimşek'];
+
     const students = [];
     for (let i = 1; i <= 100; i++) {
+        const firstName = firstNames[Math.floor(Math.random() * firstNames.length)];
+        const lastName = lastNames[Math.floor(Math.random() * lastNames.length)];
+        const fullName = `${firstName} ${lastName}`;
+        const email = `${firstName.toLowerCase()}.${lastName.toLowerCase()}${i}@test.com`
+            .replace(/ç/g, 'c').replace(/ğ/g, 'g').replace(/ı/g, 'i').replace(/ö/g, 'o').replace(/ş/g, 's').replace(/ü/g, 'u');
+
         const student = await prisma.user.create({
             data: {
-                name: `Öğrenci ${i} Yılmaz`,
-                email: `student${i}@test.com`,
+                name: fullName,
+                email,
                 password,
                 role: 'CUSTOMER',
             },
         });
         students.push(student);
     }
-    console.log('Created 100 Students.');
+    console.log('Created 100 Students with Turkish names.');
 
     // 4. Assign Packages to 80 Students
     const pkg = await prisma.package.findFirst(); // Assume at least one package exists from previous seed
