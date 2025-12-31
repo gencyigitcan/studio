@@ -7,7 +7,9 @@ export async function middleware(request: NextRequest) {
     const path = request.nextUrl.pathname;
 
     // Paths that don't require auth
-    if (path.startsWith('/login') || path.startsWith('/api/auth') || path.startsWith('/_next') || path.startsWith('/favicon.ico')) {
+    const isPublicPath = path === '/' || path.startsWith('/login') || path.startsWith('/api/auth') || path.startsWith('/_next') || path.startsWith('/favicon.ico');
+
+    if (isPublicPath) {
         if (currentUser && path.startsWith('/login')) {
             return NextResponse.redirect(new URL('/dashboard', request.url));
         }

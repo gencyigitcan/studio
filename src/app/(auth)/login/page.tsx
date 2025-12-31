@@ -46,11 +46,17 @@ export default function LoginPage() {
                         />
                     </div>
 
+
                     {state?.error && (
                         <div style={{ color: 'var(--color-error)', fontSize: '0.9rem', textAlign: 'center', padding: '0.5rem', background: '#fee2e2', borderRadius: 'var(--radius-sm)' }}>
                             {state.error}
                         </div>
                     )}
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <input type="checkbox" id="remember" name="remember" />
+                        <label htmlFor="remember" style={{ fontSize: '0.9rem' }}>Beni Hatırla</label>
+                    </div>
 
                     <button
                         type="submit"

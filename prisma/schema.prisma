@@ -6,9 +6,19 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
-  // directUrl = env("DIRECT_URL") // Used for migrations
+}
+
+model ActionLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  action    String   // e.g., "LOGIN", "BOOKING_CREATE", "PROFILE_UPDATE"
+  details   String?  // JSON or text details
+  ipAddress String?
+  createdAt DateTime @default(now())
+
+  user      User?    @relation(fields: [userId], references: [id])
 }
 
 model User {
@@ -34,6 +44,7 @@ model User {
   posts           Post[]
   availability    TrainerAvailability[]
   waitlistEntries Waitlist[]
+  actionLogs      ActionLog[]
 }
 
 model Package {

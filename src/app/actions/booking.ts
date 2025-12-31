@@ -4,6 +4,7 @@ import { prisma } from '@/lib/db';
 import { getSession } from '@/lib/auth';
 import { revalidatePath } from 'next/cache';
 import { sendEmail } from '@/lib/mail';
+import { logAction } from '@/lib/logger';
 
 export async function bookClassAction(classId: string) {
     const session = await getSession();
@@ -58,8 +59,6 @@ export async function bookClassAction(classId: string) {
                 orderBy: { endDate: 'asc' } // Use the one expiring soonest
             });
 
-            // Special handling: If Admin/Trainer booking, maybe bypass credit check? 
-            // For now, enforcing credits for Customers.
             if (!activeUserPackage && session.user.role === 'CUSTOMER') {
                 throw new Error('Aktif paketiniz veya krediniz yetersiz.');
             }
@@ -82,19 +81,12 @@ export async function bookClassAction(classId: string) {
                 }
             });
 
-            // Create Transaction Record (Log Usage)
-            // For revenue tracking, we might want to attribute a value here, e.g. PackagePrice / TotalCredits
-            // For simplicity in MVP, we might just log it.
-            // But let's verify if we need detailed accounting now. 
-            // "Finansal Raporlar" was requested.
-            // A usage transaction has 0 monetary value technically (revenue was at package sale), 
-            // but we can track "Value Delivered". Let's skip money for usage to avoid double counting revenue.
-
             return { status: 'CONFIRMED', message: 'Rezervasyon başarıyla oluşturuldu.', bookingId: booking.id, className: targetClass.name, time: targetClass.startTime };
         });
 
-        // 2. Notifications (Outside Transaction to keep it fast)
+        // 2. Notifications & Logging
         if (result.status === 'CONFIRMED') {
+            await logAction('BOOKING_CREATE', userId, { classId, className: result.className });
             await sendEmail(
                 session.user.email,
                 'Rezervasyon Onayı - Pilates Studio',
@@ -161,7 +153,6 @@ export async function cancelBookingAction(bookingId: string) {
             }
 
             // Handle Waitlist (Auto-promote first person?)
-            // Simple "First in line" logic
             const firstWaiter = await tx.waitlist.findFirst({
                 where: { classId: booking.classId },
                 orderBy: { createdAt: 'asc' },
@@ -171,15 +162,7 @@ export async function cancelBookingAction(bookingId: string) {
             let promotedUserEmail = null;
 
             if (firstWaiter) {
-                // Remove from waitlist
                 await tx.waitlist.delete({ where: { id: firstWaiter.id } });
-
-                // We need to check if this waiter has credits too! 
-                // This complexity suggests we should maybe just NOTIFY them instead of auto-booking.
-                // "Yedek listeden asil listeye geçince bildirim" was the request.
-                // So we assume we just notify them that a spot opened?
-                // OR we move them to confirmed if we can.
-                // Let's implement NOTIFY ONLY for safety in MVP to avoid negative balance issues.
                 promotedUserEmail = firstWaiter.user.email;
             }
 
@@ -187,9 +170,13 @@ export async function cancelBookingAction(bookingId: string) {
                 message: refund ? 'Rezervasyon iptal edildi ve kredi iade edildi.' : 'Rezervasyon iptal edildi ancak 12 saat kuralı nedeniyle kredi iade edilmedi.',
                 classTime: booking.class.startTime,
                 className: booking.class.name,
-                promotedUserEmail
+                promotedUserEmail,
+                refund // Helper for parent scope log
             };
         });
+
+        // Log Cancellation
+        await logAction('BOOKING_CANCEL', session.user.id, { bookingId, refund: result.refund });
 
         // Notify User
         await sendEmail(

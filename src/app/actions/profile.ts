@@ -4,6 +4,7 @@ import { prisma } from '@/lib/db';
 import { getSession } from '@/lib/auth';
 import { revalidatePath } from 'next/cache';
 import { hash } from 'bcryptjs';
+import { logAction } from '@/lib/logger';
 
 export async function updateProfileAction(formData: FormData) {
     const session = await getSession();
@@ -15,15 +16,20 @@ export async function updateProfileAction(formData: FormData) {
 
     try {
         const data: any = { name, phone };
+        const changedFields = ['name', 'phone'];
+
         if (password && password.length > 0) {
             if (password.length < 6) throw new Error('Şifre en az 6 karakter olmalı.');
             data.password = await hash(password, 12);
+            changedFields.push('password');
         }
 
         await prisma.user.update({
             where: { id: session.user.id },
             data
         });
+
+        await logAction('PROFILE_UPDATE', session.user.id, { changedFields });
 
         revalidatePath('/dashboard/profile');
         return { success: true, message: 'Profil güncellendi.' };
@@ -62,6 +68,8 @@ export async function updateHealthProfileAction(formData: FormData) {
                 }
             });
         }
+
+        await logAction('HEALTH_PROFILE_UPDATE', session.user.id, { updated: true });
 
         revalidatePath('/dashboard/profile');
         return { success: true, message: 'Sağlık bilgileri güncellendi.' };
