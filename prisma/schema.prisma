@@ -59,6 +59,62 @@ model User {
   
   // Soft Delete
   deletedAt         DateTime?
+
+  // V3 Updates
+  // phone already exists above
+  status            String   @default("ACTIVE") // ACTIVE, PASSIVE, BLOCKED
+  trainerProfile    TrainerProfile?
+  ratingsReceived   Rating[] @relation("TrainerRatings")
+  ratingsGiven      Rating[] @relation("UserRatings")
+  loginLogs         LoginLog[]
+}
+
+model TrainerProfile {
+  id              String @id @default(cuid())
+  userId          String @unique
+  user            User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bio             String?
+  specialization  String?
+  hourlyLimit     Int?
+  rating          Float  @default(0)
+  ratingCount     Int    @default(0)
+  updatedAt       DateTime @updatedAt
+}
+
+model LoginLog {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ip        String?
+  userAgent String?
+  success   Boolean  @default(true)
+  createdAt DateTime @default(now())
+}
+
+model LessonType {
+  id          String @id @default(cuid())
+  name        String @unique
+  description String?
+  isGroup     Boolean @default(true)
+  classes     Class[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Rating {
+  id        String   @id @default(cuid())
+  bookingId String   @unique
+  booking   Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  
+  userId    String
+  user      User     @relation("UserRatings", fields: [userId], references: [id])
+  
+  trainerId String
+  trainer   User     @relation("TrainerRatings", fields: [trainerId], references: [id])
+  
+  score     Int      // 1-5
+  comment   String?
+  createdAt DateTime @default(now())
 }
 
 model Badge {
@@ -168,6 +224,10 @@ model Class {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   
+  // V3 Update: Link to LessonType
+  lessonTypeId String?
+  lessonType   LessonType? @relation(fields: [lessonTypeId], references: [id])
+
   deletedAt   DateTime?
 
   trainer     User      @relation("TrainerClasses", fields: [trainerId], references: [id])
@@ -189,6 +249,9 @@ model Booking {
   updatedAt     DateTime @updatedAt
   
   deletedAt     DateTime?
+
+  // V3
+  rating        Rating?
 
   user        User        @relation(fields: [userId], references: [id])
   class       Class       @relation(fields: [classId], references: [id])
